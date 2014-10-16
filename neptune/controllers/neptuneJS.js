@@ -198,13 +198,17 @@ var neptune = (function(){
             if( waiting_views[i].model == model ) {
                 var div = waiting_views[i].view ;
                 var html = div.innerHTML ;
+                var repeat = div.hasAttribute("nt-data-row") ? div.getAttribute("nt-data-row") : -1 ;
                 var editable = div.hasAttribute("nt-editing-id") ? true : false ;
                 var editKey = editable ? div.getAttribute("nt-editing-id") : "" ;
                 var images = editable ? div.getAttribute("nt-images") ? div.getAttribute("nt-images").split(",") : null : null ;
                 div.innerHTML = "" ;
                 
+                // To bind variables to required row only, do not repeat
+                var j = repeat == -1 ? 0 : repeat ;
+                
                 // Replace variables names with model data
-                for(var j=0;j<model_obj.length;j++) {
+                for(/*var j=0*/;j<model_obj.length;j++) {
                     var row = html ;
                     var replacement ;
                     var path ;
@@ -227,6 +231,9 @@ var neptune = (function(){
                         row = row.replace("%"+key+"%", replacement) ;
                     }
                     div.innerHTML = div.innerHTML + row ;
+                    
+                    // Stop repeating if specified row only is required
+                    if (repeat != -1) break ;
                 }
                 
                 // If this is the last loaded model in the main view, invoke user defined callcak
