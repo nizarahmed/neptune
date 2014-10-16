@@ -21,7 +21,7 @@ var neptune = (function(){
     })() ;
     
     // Enable or disable debug mode
-    var debug = true ;
+    var debug = false ;
     
     // id of div holding main page
     // default 'main-content'
@@ -200,6 +200,7 @@ var neptune = (function(){
                 var html = div.innerHTML ;
                 var editable = div.hasAttribute("nt-editing-id") ? true : false ;
                 var editKey = editable ? div.getAttribute("nt-editing-id") : "" ;
+                var images = editable ? div.getAttribute("nt-images") ? div.getAttribute("nt-images").split(",") : null : null ;
                 div.innerHTML = "" ;
                 
                 // Replace variables names with model data
@@ -208,7 +209,20 @@ var neptune = (function(){
                     var replacement ;
                     var path ;
                     for(var key in model_obj[j]) {
-                        if( editable )  replacement = "<span class='nt-edit-field' nt-data-path='" + model + "%" + key + "%" + model_obj[j][editKey] + "%" + editKey + "' ondblclick='javascript:neptune.edit_field(this)'>" + model_obj[j][key] + "</span>" ;
+                        // In case of editable add on double click listener
+                        if( editable ) {
+                            // In case of text
+                            replacement = "<span class='nt-edit-field' nt-data-path='" + model + "%" + key + "%" + model_obj[j][editKey] + "%" + editKey + "' ondblclick='javascript:neptune.edit_field(this)'>" + model_obj[j][key] + "</span>" ;
+                            
+                            // In case of images (path)
+                            for(var k=0;images && k<images.length;k++) {
+                                if( images[k] == key ) {
+                                    replacement = model_obj[j][key] + "\"" + "nt-data-path='" + model + "%" + key + "%" + model_obj[j][editKey] + "%" + editKey + "' ondblclick='javascript:neptune.edit_image(this)'" ;
+                                }
+                            }
+                        }
+                        
+                        // non-editable, add value only
                         else            replacement = model_obj[j][key] ;
                         row = row.replace("%"+key+"%", replacement) ;
                     }
@@ -243,6 +257,43 @@ var neptune = (function(){
         sender.childNodes[0].focus() ;
     }
     
+    // Add image input for editing, to change image
+    function edit_image(sender) {
+        var upload_div = document.getElementById("nt_edit_model") ;
+        if( upload_div != null) upload_div.remove() ;
+        
+        upload_div = document.createElement("DIV") ;
+        upload_div.id = "nt_edit_model" ;
+        upload_div.style.display = "none" ;
+        document.getElementById(page_holder_id).appendChild(upload_div) ;
+
+        var hold = sender.getAttribute("nt-data-path").split("%") ;
+        upload_div.setAttribute("nt-data-model-sumbit", "edit_img_"+hold[0]) ;
+        
+        
+        var key = document.createElement("input") ;
+        key.setAttribute("name", "key") ;
+        key.value = hold[1] ;
+        upload_div.appendChild(key) ;
+        
+        var editkey = document.createElement("input") ;
+        editkey.setAttribute("name", "editkey") ;
+        editkey.value = hold[2] ;
+        upload_div.appendChild(editkey) ;
+        
+        var image = document.createElement("INPUT") ;
+        image.setAttribute("type", "file") ;
+        image.name = "image" ;
+        image.id = "nt_edit_model_img" ;
+        //image.onchange = upload_image ;
+        image.onchange = function () {
+            sumbit_form("nt_edit_model", upload_image_callback, sender) ;
+        }
+        upload_div.appendChild(image) ;
+        
+        image.click() ;
+    }
+    
     // Save this field
     function save_field(sender) {
         var parent = sender.parentNode ;
@@ -262,6 +313,17 @@ var neptune = (function(){
     
     // Save field callback, to save changes in local model
     function save_field_callback(response, sender) {
+        update_local_model(sender, "html") ;
+    }
+    
+    // Upload image callback, to update displayed image
+    function upload_image_callback(sender) {
+        sender.src = "images/"+document.getElementById("nt_edit_model_img").value.split(/(\\|\/)/g).pop() ;
+        update_local_model(sender, "src") ;
+    }
+    
+    // Update local model, innerHTML or image src
+    function update_local_model(sender, type) {
         var hold = sender.getAttribute("nt-data-path").split("%") ;
         for(var i=0;i<models.length;i++) {
             // model found
@@ -270,7 +332,8 @@ var neptune = (function(){
                     // row found
                     if( models[i].content[j][hold[3]] == hold[2] ) {
                         // change field
-                        models[i].content[j][hold[1]] = sender.innerHTML ;
+                        if ( type == "html" )   models[i].content[j][hold[1]] = sender.innerHTML ;
+                        else                    models[i].content[j][hold[1]] = sender.getAttribute(type) ;
                     }
                 }
             }
@@ -304,7 +367,7 @@ var neptune = (function(){
         form.setAttribute("action", "models/submit_model.php?model="+model) ;
         form.setAttribute("method", "post") ;
         form.setAttribute("enctype", "multipart/form-data") ;
-        form.setAttribute("encoding", "multipart/form-data") ;
+        //form.setAttribute("encoding", "multipart/form-data") ;
         form.appendChild(obj) ;
         idoc.body.appendChild(form) ;
         form.submit() ;
@@ -375,6 +438,7 @@ var neptune = (function(){
         change_page: change_page,
         sumbit_form: sumbit_form,
         edit_field:edit_field,
+        edit_image:edit_image,
         save_field:save_field,
         load_view: load_view
     } ;
