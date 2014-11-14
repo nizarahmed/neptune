@@ -1,8 +1,5 @@
 /*
- *
- *  Neptune Toolkit
- *
- *
+ *  neptuneJS
  */
 
 var neptune = (function(){
@@ -39,9 +36,27 @@ var neptune = (function(){
     // List of views waiting models to be loaded
     var waiting_views = Array() ;
     
+    // Navigation type applied on div 'main-content' after change_page
+    var navigation_type = "fade" ;
+    
+    // Flag to prevent simaltanous naviagtions
+    var inNavigation = false ;
+    
     // Executed after window loaded, to start neptune
     function start() {
+        make_cover() ;
         hashchange() ;
+    }
+    
+    // Make a cover for the page_holder_id div
+    function make_cover() {
+        var main_div = document.getElementById(page_holder_id) ;
+        var parent = main_div.parentNode ;
+        var cover_div = document.createElement("div") ;
+        cover_div.className = "main-content-cover"  ;
+        cover_div.id = page_holder_id + "-cover" ;
+        parent.insertBefore(cover_div, main_div) ;
+        cover_div.appendChild(main_div) ;
     }
     
     // Main usage to handle history back button
@@ -53,8 +68,11 @@ var neptune = (function(){
     
     // Navigate to new page
     function change_page(page, user_callback) {
+        if( inNavigation ) return ;
+        
         current_page = page ;
         window.location = "#" + page ;
+        adjust_navigation() ;
         load_view(page, page_holder_id, user_callback) ;
     }
     
@@ -102,6 +120,7 @@ var neptune = (function(){
         
         // If no models found, invoke user defined callback
         if( views.length == 0 ) {
+            start_navigation() ;
             if( user_callback ) user_callback() ;
         }
         // Add this view to list of loading views to invoke user_callback after view completes loading
@@ -245,6 +264,7 @@ var neptune = (function(){
                             if( loading_views[j].callback )
                                 loading_views[j].callback() ;
                             loading_views.splice(j, 1) ;
+                            start_navigation() ;
                             break ;
                         }
                     }
@@ -344,6 +364,50 @@ var neptune = (function(){
                     }
                 }
             }
+        }
+    }
+    
+    // Add main div clone for navigation
+    function adjust_navigation() {
+        if( navigation_type != "none" ) {
+            inNavigation = true ;
+            
+            var page_org = document.getElementById(page_holder_id) ;
+            var page_clone = page_org.cloneNode(true) ;
+            
+            page_clone.id = page_holder_id + "_clone" ;
+            page_clone.style.display = "block" ;
+            
+            page_org.style.display = "none" ;
+            page_org.parentNode.insertBefore(page_clone, page_org) ;
+        }
+    }
+    
+    // Start the navigation animation
+    function start_navigation() {
+        if( navigation_type != "none" ) {
+            var page_org = document.getElementById(page_holder_id) ;
+            var page_clone = document.getElementById(page_holder_id+"_clone") ;
+            var step = 0 ;
+            var timer = setInterval(function(){
+                step ++ ;
+                if( step < 10 ){
+                    page_clone.style.opacity = 1- step / 10 ;
+                }
+                else if( step == 10 ) {
+                    page_org.style.display = "block" ;
+                    page_org.style.opacity = 0 ;
+                    page_clone.parentNode.removeChild(page_clone) ;
+                }
+                else if( step < 20 ) {
+                    page_org.style.opacity = (step-9) / 10 ;
+                }
+                else {
+                    clearInterval(timer) ;
+                    inNavigation = false ;
+                }
+                
+            }, 20) ;
         }
     }
     

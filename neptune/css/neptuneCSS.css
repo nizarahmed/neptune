@@ -1,2 +1,10 @@
+/*
+ *  neptuneCSS
+*/
 .nt-edit-field:hover {
+}
+
+.main-content-cover {
+    width: 100% ;
+    overflow: hidden ;
 }

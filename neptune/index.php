@@ -6,7 +6,6 @@
     
     <head>
         <title>neptune</title>
-        <link rel="stylesheet" href="css/bootstrap.css"/>
         <link rel="stylesheet" href="css/main.css"/>
         <link rel="stylesheet" href="css/neptuneCSS.css"/>
         
